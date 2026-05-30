@@ -1,121 +1,174 @@
-// app.js
-// アプリケーションの状態と画面遷移を管理する。
-// ロジックは core/ に、DOM描画は ui/ に委譲する。
+// app.js — v2 minimum I Ching reading flow
+// Self-contained IIFE. No globals. No build step.
 
-// ─── State ────────────────────────────────────────────────────
-const AppState = {
-  phase: 'idle',      // idle | spinning | done
-  clicks: 0,
-  bits: '',           // '0'/'1' を積み上げる文字列 (最終6文字)
-  hexagram: null,     // 確定した卦オブジェクト
-};
+(() => {
+  'use strict';
 
-// ─── Guide messages ───────────────────────────────────────────
-const GUIDES = [
-  'タップして易を立てる',   // 0 clicks
-  '２回目',
-  '３回目',
-  '４回目',
-  '５回目',
-  'もう１回',
-  '',                       // 6 clicks (transition)
-];
+  // ── State ──────────────────────────────────────────────────
+  let hexagrams  = [];
+  let clicks     = 0;
+  let bits       = '';      // accumulates '0'/'1', length 0–6
+  let anim       = null;    // Lottie instance
+  let busy       = false;   // guard against double-tap
 
-const YAO_NAMES = ['初', '二', '三', '四', '五', '上'];
+  const GUIDES = [
+    'タップして易を立てる',
+    '二爻目',
+    '三爻目',
+    '四爻目',
+    '五爻目',
+    'あと一回',
+  ];
 
-// ─── Screen helper ────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => {
-    s.classList.toggle('active', s.id === id);
-  });
-}
-
-// ─── Click handler ────────────────────────────────────────────
-function handleClick() {
-  if (AppState.phase !== 'spinning' && AppState.phase !== 'idle') return;
-  if (AppState.clicks >= 6) return;
-
-  AppState.phase = 'spinning';
-
-  // 停止 → パルス
-  Spinner.stop();
-  Spinner.pulse(() => {
-    // 乱数で陰陽を決定
-    const bit = Math.random() < 0.5 ? '0' : '1';
-    AppState.bits += bit;
-    AppState.clicks++;
-
-    // 爻を描画（1〜6、下から）
-    ResultUI.addLine(bit, AppState.clicks);
-
-    // ガイドテキスト更新
-    if (AppState.clicks < 6) {
-      const yaoName = YAO_NAMES[AppState.clicks - 1];
-      const yy = bit === '0' ? '陰' : '陽';
-      ResultUI.setGuide(`${yaoName}爻 — ${yy}`);
-      AppState.phase = 'spinning';
-    } else {
-      // 6本揃った
-      AppState.phase = 'done';
-      ResultUI.setGuide('');
-      onSixthClick();
-    }
-  });
-}
-
-// ─── 6回目完了処理 ────────────────────────────────────────────
-function onSixthClick() {
-  AppState.hexagram = Reading.resolve(AppState.bits);
-
-  if (!AppState.hexagram) {
-    console.error('卦が見つかりません:', AppState.bits);
-    return;
+  // ── Data ───────────────────────────────────────────────────
+  async function loadHexagrams() {
+    const res = await fetch('./hexagram.json');
+    if (!res.ok) throw new Error(`hexagram.json: ${res.status}`);
+    hexagrams = await res.json();
   }
 
-  // スピナーを縮小 → 結果画面へ
-  setTimeout(() => {
-    Spinner.shrink(() => {
-      ResultUI.showHexagram(AppState.hexagram);
-      showScreen('screen-result');
+  function findByBits(str) {
+    return hexagrams.find(h => h.array === str) ?? null;
+  }
+
+  // ── Lottie spinner ─────────────────────────────────────────
+  function initSpinner() {
+    const el = document.getElementById('lottie-el');
+    el.innerHTML = '';
+    anim = lottie.loadAnimation({
+      container: el,
+      renderer:  'svg',
+      loop:      true,
+      autoplay:  false,
+      path:      './assets/animations/spinner.json',
     });
-  }, 800); // 6本目をちょっと見せてから遷移
-}
-
-// ─── Reset ────────────────────────────────────────────────────
-function reset() {
-  AppState.phase = 'idle';
-  AppState.clicks = 0;
-  AppState.bits = '';
-  AppState.hexagram = null;
-
-  ResultUI.clearLines();
-  ResultUI.setGuide(GUIDES[0]);
-  Spinner.reset();
-  showScreen('screen-spin');
-}
-
-// ─── Init ─────────────────────────────────────────────────────
-async function init() {
-  try {
-    await Data.ready();
-  } catch (e) {
-    console.error('hexagram.json の読み込みに失敗しました:', e);
-    return;
+    anim.addEventListener('DOMLoaded', () => anim.play());
   }
 
-  // スピナー初期化
-  Spinner.init();
+  function destroySpinner() {
+    if (anim) { anim.destroy(); anim = null; }
+  }
 
-  // ガイドを初期化
-  ResultUI.setGuide(GUIDES[0]);
+  // visual pulse → cb when done
+  function pulse(cb) {
+    const w = document.getElementById('spinner-wrap');
+    w.classList.remove('pulse');
+    void w.offsetWidth;                       // reflow to restart animation
+    w.classList.add('pulse');
+    w.addEventListener('animationend', () => { w.classList.remove('pulse'); cb(); }, { once: true });
+  }
 
-  // スピナークリック
-  document.getElementById('spinner-wrap')
-    ?.addEventListener('click', handleClick);
+  // scale to zero → cb when done
+  function hideSpinner(cb) {
+    const w = document.getElementById('spinner-wrap');
+    w.classList.add('gone');
+    setTimeout(cb, 520);
+  }
 
-  // リセットボタン
-  document.getElementById('btn-reset')
-    ?.addEventListener('click', reset);
-}
+  // ── Yao (爻) rendering ─────────────────────────────────────
+  // Uses CSS-only bars — no image files needed.
+  function drawYao(bit, lineNo) {
+    // Replace the slot node to re-trigger the CSS animation
+    const old = document.querySelector(`#yao-stack .yao[data-line="${lineNo}"]`);
+    if (!old) return;
+    const fresh = document.createElement('div');
+    fresh.className = `yao ${bit === '1' ? 'yang' : 'yin'}`;
+    fresh.dataset.line = lineNo;
+    old.replaceWith(fresh);
+  }
 
-document.addEventListener('DOMContentLoaded', init);
+  function clearYao() {
+    document.querySelectorAll('#yao-stack .yao').forEach(el => {
+      const n = el.dataset.line;
+      const blank = document.createElement('div');
+      blank.className = 'yao';
+      blank.dataset.line = n;
+      el.replaceWith(blank);
+    });
+  }
+
+  // ── Guide text ─────────────────────────────────────────────
+  function setGuide(text) {
+    const el = document.getElementById('guide');
+    if (el) el.textContent = text;
+  }
+
+  // ── Screen transition ──────────────────────────────────────
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.toggle('active', s.id === id);
+    });
+  }
+
+  // ── Result ─────────────────────────────────────────────────
+  function renderResult(hex) {
+    document.getElementById('result-card').innerHTML = `
+      <p class="rc-label">あなたの卦</p>
+      <p class="rc-number">第 ${hex.number} 卦</p>
+      <div class="rc-symbol">${hex.unicode}</div>
+      <h1 class="rc-name">
+        <ruby>${hex.name}<rt>${hex.reading}</rt></ruby>
+      </h1>
+      <p class="rc-summary">${hex.summary}</p>
+      <div class="rc-rule"></div>
+      <p class="rc-desc">${hex.description}</p>
+    `;
+  }
+
+  // ── Click handler ──────────────────────────────────────────
+  function onTap() {
+    if (busy || clicks >= 6) return;
+    busy = true;
+
+    // freeze lottie at current frame
+    if (anim) anim.goToAndStop(anim.currentFrame, true);
+
+    pulse(() => {
+      const bit = Math.random() < 0.5 ? '0' : '1';
+      bits += bit;
+      clicks++;
+      drawYao(bit, clicks);
+
+      if (clicks < 6) {
+        setGuide(GUIDES[clicks]);
+        if (anim) anim.play();
+        busy = false;
+      } else {
+        // 6th line — brief pause, then transition
+        setGuide('');
+        const hex = findByBits(bits);
+        if (!hex) { console.error('no hexagram for', bits); busy = false; return; }
+        setTimeout(() => hideSpinner(() => { renderResult(hex); show('screen-result'); }), 650);
+      }
+    });
+  }
+
+  // ── Reset ──────────────────────────────────────────────────
+  function reset() {
+    clicks = 0;
+    bits   = '';
+    busy   = false;
+    clearYao();
+    setGuide(GUIDES[0]);
+    document.getElementById('spinner-wrap').classList.remove('gone');
+    destroySpinner();
+    initSpinner();
+    show('screen-spin');
+  }
+
+  // ── Bootstrap ──────────────────────────────────────────────
+  async function init() {
+    try {
+      await loadHexagrams();
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+    initSpinner();
+    document.getElementById('spinner-wrap').addEventListener('click', onTap);
+    document.getElementById('btn-again').addEventListener('click', reset);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+
+})();

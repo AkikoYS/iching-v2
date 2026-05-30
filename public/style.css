@@ -1,16 +1,17 @@
-/* v2 — minimal reading flow */
-
+/* ── Reset ─────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Tokens ─────────────────────────────────────── */
 :root {
-  --bg:       #0d0a13;
-  --surface:  #1a1428;
-  --accent:   #9b6dff;
-  --muted:    #5c3fa0;
-  --text:     #ede8f5;
-  --dim:      #7a6e8f;
-  --yin-col:  #6ab0ff;
-  --yang-col: #ff7e6b;
+  --bg:      #0d0a13;
+  --surface: #1a1428;
+  --accent:  #9b6dff;
+  --muted:   #5c3fa0;
+  --text:    #ede8f5;
+  --dim:     #7a6e8f;
+  --yin:     #6ab0ff;
+  --yang:    #ff8c75;
+  --spin-sz: clamp(180px, 48vw, 260px);
 }
 
 html, body {
@@ -21,7 +22,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Screens ───────────────────────────────────── */
+/* ── Screens ─────────────────────────────────────── */
 .screen {
   display: none;
   flex-direction: column;
@@ -32,160 +33,151 @@ html, body {
 }
 .screen.active {
   display: flex;
-  animation: fadeUp 0.45s ease both;
+  animation: rise 0.4s ease both;
 }
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Guide text ────────────────────────────────── */
+/* ── Guide ──────────────────────────────────────── */
 .guide {
-  font-size: clamp(0.78rem, 2.4vw, 0.92rem);
-  letter-spacing: 0.2em;
+  font-size: clamp(0.76rem, 2.2vw, 0.9rem);
+  letter-spacing: 0.22em;
   color: var(--dim);
-  margin-bottom: 2rem;
+  margin-bottom: 1.8rem;
   min-height: 1.4em;
   text-align: center;
-  transition: opacity 0.25s;
 }
 
-/* ── Spinner ───────────────────────────────────── */
+/* ── Spinner ─────────────────────────────────────── */
 #spinner-wrap {
-  width: clamp(180px, 46vw, 260px);
-  height: clamp(180px, 46vw, 260px);
+  width:  var(--spin-sz);
+  height: var(--spin-sz);
   cursor: pointer;
   border-radius: 50%;
-  transition: transform 0.55s ease, opacity 0.55s ease;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  will-change: transform, opacity;
 }
-#spinner-wrap.gone {
-  transform: scale(0);
-  opacity: 0;
-  pointer-events: none;
-}
+#spinner-wrap.gone { transform: scale(0); opacity: 0; pointer-events: none; }
 #lottie-el { width: 100%; height: 100%; }
 
-/* pulse on each tap */
+/* tap pulse */
 @keyframes tap-pulse {
-  0%   { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(155,109,255,0)); }
-  25%  { transform: scale(1.1);  filter: drop-shadow(0 0 20px rgba(155,109,255,.65)); }
-  100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(155,109,255,0)); }
+  0%  { transform: scale(1);    filter: drop-shadow(0 0 0px rgba(155,109,255,0)); }
+  30% { transform: scale(1.09); filter: drop-shadow(0 0 18px rgba(155,109,255,.6)); }
+  100%{ transform: scale(1);    filter: drop-shadow(0 0 0px rgba(155,109,255,0)); }
 }
-#spinner-wrap.pulse { animation: tap-pulse 0.45s ease; }
+#spinner-wrap.pulse { animation: tap-pulse 0.4s ease; }
 
-/* ── Yao stack (爻の積み上げ) ──────────────────── */
+/* ── Yao stack ───────────────────────────────────── */
 #yao-stack {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-top: 2rem;
-  min-height: 108px; /* 6 × 11px + 5 × 7px gap */
+  gap: 8px;
+  margin-top: 1.8rem;
 }
 .yao {
-  width: 72px;
-  height: 11px;
+  width: 76px;
+  height: 10px;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 /* Yang: solid bar */
 .yao.yang::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--yang-col);
-  border-radius: 2px;
-  animation: yao-in 0.28s ease both;
+  background: var(--yang);
+  border-radius: 3px;
+  animation: yao-appear 0.25s ease both;
 }
-/* Yin: two short bars with gap */
+/* Yin: two bars with gap */
 .yao.yin::before,
 .yao.yin::after {
   content: '';
   position: absolute;
   top: 0; bottom: 0;
-  width: 30px;
-  background: var(--yin-col);
-  border-radius: 2px;
-  animation: yao-in 0.28s ease both;
+  width: 31px;
+  background: var(--yin);
+  border-radius: 3px;
+  animation: yao-appear 0.25s ease both;
 }
 .yao.yin::before { left: 0; }
 .yao.yin::after  { right: 0; }
 
-@keyframes yao-in {
-  from { opacity: 0; transform: scaleX(0.5); }
+@keyframes yao-appear {
+  from { opacity: 0; transform: scaleX(0.4); }
   to   { opacity: 1; transform: scaleX(1); }
 }
 
-/* ── Result card ───────────────────────────────── */
+/* ── Result card ─────────────────────────────────── */
 #result-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 420px;
+  max-width: 400px;
   width: 100%;
-  gap: 0;
 }
-.r-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
+.rc-label   {
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
   color: var(--dim);
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.75rem;
 }
-.r-number {
-  font-size: 0.78rem;
+.rc-number  {
+  font-size: 0.76rem;
   color: var(--muted);
   letter-spacing: 0.14em;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
-.r-unicode {
-  font-size: clamp(3.5rem, 14vw, 5.5rem);
+.rc-symbol  {
+  font-size: clamp(3.8rem, 14vw, 5.8rem);
   line-height: 1;
   color: var(--accent);
-  margin-bottom: 0.6rem;
-  opacity: 0.85;
+  margin-bottom: 0.7rem;
+  opacity: 0.88;
 }
-.r-name {
-  font-size: clamp(1.5rem, 5vw, 2rem);
+.rc-name {
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
   font-weight: 400;
   letter-spacing: 0.1em;
   line-height: 1.3;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
 }
-.r-name ruby rt {
+.rc-name ruby rt {
   font-size: 0.4em;
   color: var(--dim);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
-.r-summary {
-  font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+.rc-summary {
+  font-size: clamp(0.8rem, 2.4vw, 0.92rem);
   color: var(--accent);
   letter-spacing: 0.14em;
-  margin-bottom: 1.6rem;
+  margin-bottom: 1.8rem;
 }
-.r-divider {
-  width: 32px;
+.rc-rule {
+  width: 28px;
   height: 1px;
   background: var(--muted);
-  opacity: 0.4;
-  margin-bottom: 1.6rem;
+  opacity: 0.35;
+  margin-bottom: 1.8rem;
 }
-.r-desc {
-  font-size: clamp(0.88rem, 2.8vw, 0.98rem);
+.rc-desc {
+  font-size: clamp(0.86rem, 2.7vw, 0.96rem);
   line-height: 2;
   color: var(--text);
   letter-spacing: 0.04em;
-  opacity: 0.9;
+  opacity: 0.88;
 }
 
-/* ── Reset button ──────────────────────────────── */
+/* ── Again button ────────────────────────────────── */
 #btn-again {
   margin-top: 2.8rem;
   background: transparent;
   border: 1px solid var(--muted);
   color: var(--dim);
-  padding: 0.55rem 2rem;
+  padding: 0.55rem 2.2rem;
   border-radius: 999px;
   font-size: 0.82rem;
   letter-spacing: 0.14em;
@@ -193,7 +185,4 @@ html, body {
   font-family: inherit;
   transition: border-color 0.2s, color 0.2s;
 }
-#btn-again:hover {
-  border-color: var(--accent);
-  color: var(--text);
-}
+#btn-again:hover { border-color: var(--accent); color: var(--text); }
