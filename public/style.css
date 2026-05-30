@@ -1,20 +1,16 @@
-/* =========================================================
-   v2 style.css — minimal, responsive
-   ========================================================= */
+/* v2 — minimal reading flow */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #0e0a14;
-  --surface:   #1a1425;
-  --accent:    #9b6dff;
-  --accent-dim:#5c3fa0;
-  --text:      #e8e0f0;
-  --text-dim:  #8a7fa0;
-  --yin:       #6ab0ff;
-  --yang:      #ff7e6b;
-  --radius:    12px;
-  --spinner-size: clamp(200px, 50vw, 280px);
+  --bg:       #0d0a13;
+  --surface:  #1a1428;
+  --accent:   #9b6dff;
+  --muted:    #5c3fa0;
+  --text:     #ede8f5;
+  --dim:      #7a6e8f;
+  --yin-col:  #6ab0ff;
+  --yang-col: #ff7e6b;
 }
 
 html, body {
@@ -25,196 +21,179 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Screens ─────────────────────────────────────────── */
+/* ── Screens ───────────────────────────────────── */
 .screen {
   display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
-  padding: 2rem 1.5rem;
-  animation: fadeIn 0.4s ease;
+  padding: 2.5rem 1.5rem;
 }
-
-.screen.active { display: flex; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+.screen.active {
+  display: flex;
+  animation: fadeUp 0.45s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Guide text ───────────────────────────────────────── */
+/* ── Guide text ────────────────────────────────── */
 .guide {
-  font-size: clamp(0.8rem, 2.5vw, 1rem);
-  letter-spacing: 0.18em;
-  color: var(--text-dim);
+  font-size: clamp(0.78rem, 2.4vw, 0.92rem);
+  letter-spacing: 0.2em;
+  color: var(--dim);
   margin-bottom: 2rem;
-  min-height: 1.5em;
+  min-height: 1.4em;
   text-align: center;
-  transition: opacity 0.3s;
+  transition: opacity 0.25s;
 }
 
-/* ── Spinner wrapper ──────────────────────────────────── */
+/* ── Spinner ───────────────────────────────────── */
 #spinner-wrap {
-  width: var(--spinner-size);
-  height: var(--spinner-size);
+  width: clamp(180px, 46vw, 260px);
+  height: clamp(180px, 46vw, 260px);
   cursor: pointer;
-  position: relative;
   border-radius: 50%;
-  transition: transform 0.6s ease, opacity 0.6s ease;
+  transition: transform 0.55s ease, opacity 0.55s ease;
 }
-
-#spinner-wrap.shrink {
+#spinner-wrap.gone {
   transform: scale(0);
   opacity: 0;
   pointer-events: none;
 }
+#lottie-el { width: 100%; height: 100%; }
 
-#lottie-target {
-  width: 100%;
-  height: 100%;
+/* pulse on each tap */
+@keyframes tap-pulse {
+  0%   { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(155,109,255,0)); }
+  25%  { transform: scale(1.1);  filter: drop-shadow(0 0 20px rgba(155,109,255,.65)); }
+  100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(155,109,255,0)); }
 }
+#spinner-wrap.pulse { animation: tap-pulse 0.45s ease; }
 
-/* pulse on click */
-@keyframes pulse {
-  0%   { transform: scale(1);    filter: drop-shadow(0 0 0px rgba(155,109,255,0)); }
-  20%  { transform: scale(1.12); filter: drop-shadow(0 0 24px rgba(155,109,255,0.7)); }
-  100% { transform: scale(1);    filter: drop-shadow(0 0 0px rgba(155,109,255,0)); }
-}
-#spinner-wrap.pulse { animation: pulse 0.5s ease; }
-
-/* ── Hexagram build (爻の積み上げ) ────────────────────── */
-#hex-build {
+/* ── Yao stack (爻の積み上げ) ──────────────────── */
+#yao-stack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   margin-top: 2rem;
-  min-height: 120px;
-  align-items: center;
+  min-height: 108px; /* 6 × 11px + 5 × 7px gap */
 }
-
-.hex-slot {
-  width: 80px;
-  height: 12px;
+.yao {
+  width: 72px;
+  height: 11px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-.hex-slot img {
-  width: 80px;
-  height: 12px;
-  object-fit: contain;
-  opacity: 0;
-  animation: lineAppear 0.3s ease forwards;
+/* Yang: solid bar */
+.yao.yang::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--yang-col);
+  border-radius: 2px;
+  animation: yao-in 0.28s ease both;
 }
+/* Yin: two short bars with gap */
+.yao.yin::before,
+.yao.yin::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 30px;
+  background: var(--yin-col);
+  border-radius: 2px;
+  animation: yao-in 0.28s ease both;
+}
+.yao.yin::before { left: 0; }
+.yao.yin::after  { right: 0; }
 
-.hex-slot img.yin  { filter: brightness(0) saturate(100%) invert(60%) sepia(50%) saturate(500%) hue-rotate(185deg); }
-.hex-slot img.yang { filter: brightness(0) saturate(100%) invert(65%) sepia(40%) saturate(600%) hue-rotate(330deg); }
-
-@keyframes lineAppear {
-  from { opacity: 0; transform: scaleX(0.6); }
+@keyframes yao-in {
+  from { opacity: 0; transform: scaleX(0.5); }
   to   { opacity: 1; transform: scaleX(1); }
 }
 
-/* ── Result screen ────────────────────────────────────── */
-#result-inner {
-  max-width: 540px;
-  width: 100%;
+/* ── Result card ───────────────────────────────── */
+#result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  animation: fadeIn 0.5s ease;
+  max-width: 420px;
+  width: 100%;
+  gap: 0;
 }
-
-.result-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  color: var(--text-dim);
-  margin-bottom: 0.8rem;
+.r-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: var(--dim);
+  margin-bottom: 0.7rem;
 }
-
-.result-number {
-  font-size: 0.85rem;
-  color: var(--accent-dim);
-  letter-spacing: 0.1em;
+.r-number {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.14em;
   margin-bottom: 0.4rem;
 }
-
-.result-name {
-  font-size: clamp(1.6rem, 5vw, 2.2rem);
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  color: var(--text);
-  margin-bottom: 0.3rem;
-  line-height: 1.3;
-}
-
-.result-name ruby rt {
-  font-size: 0.45em;
-  color: var(--text-dim);
-}
-
-.result-summary {
-  font-size: clamp(0.85rem, 2.5vw, 1rem);
+.r-unicode {
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  line-height: 1;
   color: var(--accent);
-  letter-spacing: 0.12em;
-  margin-bottom: 1.8rem;
+  margin-bottom: 0.6rem;
+  opacity: 0.85;
 }
-
-.result-hexagram-svg {
-  width: clamp(80px, 25vw, 120px);
-  height: auto;
-  margin: 0 auto 1.8rem;
-  display: block;
-  opacity: 0.9;
+.r-name {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
+  margin-bottom: 0.2rem;
 }
-
-.result-hexagram-text {
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-  margin-bottom: 1.2rem;
-  font-style: italic;
+.r-name ruby rt {
+  font-size: 0.4em;
+  color: var(--dim);
+  letter-spacing: 0.08em;
 }
-
-.result-description {
-  font-size: clamp(0.9rem, 2.8vw, 1rem);
+.r-summary {
+  font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+  color: var(--accent);
+  letter-spacing: 0.14em;
+  margin-bottom: 1.6rem;
+}
+.r-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--muted);
+  opacity: 0.4;
+  margin-bottom: 1.6rem;
+}
+.r-desc {
+  font-size: clamp(0.88rem, 2.8vw, 0.98rem);
   line-height: 2;
   color: var(--text);
   letter-spacing: 0.04em;
-  margin-bottom: 2rem;
+  opacity: 0.9;
 }
 
-/* ── Buttons ──────────────────────────────────────────── */
-.btn-ghost {
+/* ── Reset button ──────────────────────────────── */
+#btn-again {
+  margin-top: 2.8rem;
   background: transparent;
-  border: 1px solid var(--accent-dim);
-  color: var(--text-dim);
-  padding: 0.6rem 2rem;
+  border: 1px solid var(--muted);
+  color: var(--dim);
+  padding: 0.55rem 2rem;
   border-radius: 999px;
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
   cursor: pointer;
   font-family: inherit;
   transition: border-color 0.2s, color 0.2s;
-  margin-top: 1rem;
 }
-.btn-ghost:hover {
+#btn-again:hover {
   border-color: var(--accent);
   color: var(--text);
-}
-
-/* ── Loading state ────────────────────────────────────── */
-.loading-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--accent-dim);
-  margin: 0 3px;
-  animation: blink 1.2s infinite;
-}
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes blink {
-  0%, 80%, 100% { opacity: 0.2; }
-  40%           { opacity: 1; }
 }

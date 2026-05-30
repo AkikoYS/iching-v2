@@ -9,32 +9,29 @@
 </head>
 <body>
 
-  <!-- ① スピナー画面 -->
+  <!-- Screen 1: Spinner -->
   <div id="screen-spin" class="screen active">
     <p id="guide" class="guide">タップして易を立てる</p>
-    <div id="spinner-wrap" role="button" aria-label="スピナー">
-      <div id="lottie-target"></div>
+    <div id="spinner-wrap" role="button" aria-label="スピナーをタップ">
+      <div id="lottie-el"></div>
     </div>
-    <div id="hex-build">
-      <div class="hex-slot" data-line="6"></div>
-      <div class="hex-slot" data-line="5"></div>
-      <div class="hex-slot" data-line="4"></div>
-      <div class="hex-slot" data-line="3"></div>
-      <div class="hex-slot" data-line="2"></div>
-      <div class="hex-slot" data-line="1"></div>
+    <div id="yao-stack">
+      <!-- 爻は上から表示するため line 6→1 の順 -->
+      <div class="yao" data-line="6"></div>
+      <div class="yao" data-line="5"></div>
+      <div class="yao" data-line="4"></div>
+      <div class="yao" data-line="3"></div>
+      <div class="yao" data-line="2"></div>
+      <div class="yao" data-line="1"></div>
     </div>
   </div>
 
-  <!-- ② 結果画面 -->
+  <!-- Screen 2: Result -->
   <div id="screen-result" class="screen">
-    <div id="result-inner"></div>
-    <button id="btn-reset" class="btn-ghost">もう一度占う</button>
+    <div id="result-card"></div>
+    <button id="btn-again">もう一度占う</button>
   </div>
 
-  <script src="core/data.js"></script>
-  <script src="core/reading.js"></script>
-  <script src="ui/spinner.js"></script>
-  <script src="ui/result.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
