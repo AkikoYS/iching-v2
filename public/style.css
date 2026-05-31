@@ -1,20 +1,27 @@
 /* ── Reset ─────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 /* ── Tokens ─────────────────────────────────────── */
 :root {
-  --bg:      #0d0a13;
+  --bg: #0d0a13;
   --surface: #1a1428;
-  --accent:  #9b6dff;
-  --muted:   #5c3fa0;
-  --text:    #ede8f5;
-  --dim:     #7a6e8f;
-  --yin:     #6ab0ff;
-  --yang:    #ff8c75;
+  --accent: #9b6dff;
+  --muted: #5c3fa0;
+  --text: #ede8f5;
+  --dim: #7a6e8f;
+  --yin: #6ab0ff;
+  --yang: #ff8c75;
   --spin-sz: clamp(180px, 48vw, 260px);
 }
 
-html, body {
+html,
+body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
@@ -31,13 +38,22 @@ html, body {
   min-height: 100dvh;
   padding: 2.5rem 1.5rem;
 }
+
 .screen.active {
   display: flex;
   animation: rise 0.4s ease both;
 }
+
 @keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Guide ──────────────────────────────────────── */
@@ -52,23 +68,46 @@ html, body {
 
 /* ── Spinner ─────────────────────────────────────── */
 #spinner-wrap {
-  width:  var(--spin-sz);
+  width: var(--spin-sz);
   height: var(--spin-sz);
   cursor: pointer;
   border-radius: 50%;
   transition: transform 0.5s ease, opacity 0.5s ease;
   will-change: transform, opacity;
 }
-#spinner-wrap.gone { transform: scale(0); opacity: 0; pointer-events: none; }
-#lottie-el { width: 100%; height: 100%; }
+
+#spinner-wrap.gone {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#lottie-el {
+  width: 100%;
+  height: 100%;
+}
 
 /* tap pulse */
 @keyframes tap-pulse {
-  0%  { transform: scale(1);    filter: drop-shadow(0 0 0px rgba(155,109,255,0)); }
-  30% { transform: scale(1.09); filter: drop-shadow(0 0 18px rgba(155,109,255,.6)); }
-  100%{ transform: scale(1);    filter: drop-shadow(0 0 0px rgba(155,109,255,0)); }
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(155, 109, 255, 0));
+  }
+
+  30% {
+    transform: scale(1.09);
+    filter: drop-shadow(0 0 18px rgba(155, 109, 255, .6));
+  }
+
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(155, 109, 255, 0));
+  }
 }
-#spinner-wrap.pulse { animation: tap-pulse 0.4s ease; }
+
+#spinner-wrap.pulse {
+  animation: tap-pulse 0.4s ease;
+}
 
 /* ── Yao stack ───────────────────────────────────── */
 #yao-stack {
@@ -77,11 +116,13 @@ html, body {
   gap: 8px;
   margin-top: 1.8rem;
 }
+
 .yao {
   width: 76px;
   height: 10px;
   position: relative;
 }
+
 /* Yang: solid bar */
 .yao.yang::before {
   content: '';
@@ -91,23 +132,38 @@ html, body {
   border-radius: 3px;
   animation: yao-appear 0.25s ease both;
 }
+
 /* Yin: two bars with gap */
 .yao.yin::before,
 .yao.yin::after {
   content: '';
   position: absolute;
-  top: 0; bottom: 0;
+  top: 0;
+  bottom: 0;
   width: 31px;
   background: var(--yin);
   border-radius: 3px;
   animation: yao-appear 0.25s ease both;
 }
-.yao.yin::before { left: 0; }
-.yao.yin::after  { right: 0; }
+
+.yao.yin::before {
+  left: 0;
+}
+
+.yao.yin::after {
+  right: 0;
+}
 
 @keyframes yao-appear {
-  from { opacity: 0; transform: scaleX(0.4); }
-  to   { opacity: 1; transform: scaleX(1); }
+  from {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
 }
 
 /* ── Result card ─────────────────────────────────── */
@@ -119,43 +175,58 @@ html, body {
   max-width: 400px;
   width: 100%;
 }
-.rc-label   {
+
+.rc-label {
   font-size: 0.7rem;
   letter-spacing: 0.24em;
   color: var(--dim);
   margin-bottom: 0.75rem;
 }
-.rc-number  {
+
+.rc-number {
   font-size: 0.76rem;
   color: var(--muted);
   letter-spacing: 0.14em;
   margin-bottom: 0.5rem;
 }
-.rc-symbol  {
+
+.rc-symbol {
   font-size: clamp(3.8rem, 14vw, 5.8rem);
   line-height: 1;
   color: var(--accent);
   margin-bottom: 0.7rem;
   opacity: 0.88;
 }
+
 .rc-name {
   font-size: clamp(1.5rem, 5vw, 2.1rem);
   font-weight: 400;
   letter-spacing: 0.1em;
   line-height: 1.3;
   margin-bottom: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
 }
-.rc-name ruby rt {
-  font-size: 0.4em;
+
+.rc-kanji {
+  color: var(--text);
+}
+
+.rc-yomi {
+  font-size: 0.5em;
   color: var(--dim);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
 }
+
 .rc-summary {
   font-size: clamp(0.8rem, 2.4vw, 0.92rem);
   color: var(--accent);
   letter-spacing: 0.14em;
   margin-bottom: 1.8rem;
 }
+
 .rc-rule {
   width: 28px;
   height: 1px;
@@ -163,6 +234,7 @@ html, body {
   opacity: 0.35;
   margin-bottom: 1.8rem;
 }
+
 .rc-desc {
   font-size: clamp(0.86rem, 2.7vw, 0.96rem);
   line-height: 2;
@@ -185,4 +257,8 @@ html, body {
   font-family: inherit;
   transition: border-color 0.2s, color 0.2s;
 }
-#btn-again:hover { border-color: var(--accent); color: var(--text); }
+
+#btn-again:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
