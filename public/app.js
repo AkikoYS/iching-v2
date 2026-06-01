@@ -13,12 +13,13 @@
     busy: false,   // guard against double-tap
   };
   const GUIDES = [
-    'Tap to cast the oracle',
-    'Cast line 2',
-    'Cast line 3',
-    'Cast line 4',
-    'Cast line 5',
-    'One more',
+    'Tap to cast the oracle...',
+    'Tap again..',
+    'Tap again..',
+    'Tap again..',
+    'Tap again..',
+    'Tap again..',
+    'Last tap to reveal your hexagram',
   ];
 
   // ── Data ───────────────────────────────────────────────────
@@ -47,7 +48,7 @@
   }
 
   function destroySpinner() {
-    if (state.anim) { state.anim.destroy(); anim = null; }
+    if (state.anim) { state.anim.destroy(); state.anim = null; }
   }
 
   // visual pulse → cb when done
@@ -96,6 +97,13 @@
 
   // ── Screen transition ──────────────────────────────────────
   function show(id) {
+    if (id === 'screen-result') {
+      const stack = document.getElementById('yao-stack');
+      const resultCard = document.getElementById('result-card');
+      if (stack && resultCard) {
+        resultCard.parentElement.insertBefore(stack, resultCard);
+      }
+    }
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.toggle('active', s.id === id);
     });
@@ -104,17 +112,16 @@
   // ── Result ─────────────────────────────────────────────────
   function renderResult(hex) {
     document.getElementById('result-card').innerHTML = `
-      <p class="rc-label">Your hexagram</p>
-      <p class="rc-number">No ${hex.number} 卦</p>
-      <div class="rc-symbol">${hex.unicode}</div>
-      <h1 class="rc-name">
-       <span class="rc-kanji">${hex.name}</span>
-+        <span class="rc-yomi">${hex.reading}</span>
-      </h1>
-      <p class="rc-summary">${hex.summary}</p>
-      <div class="rc-rule"></div>
-      <p class="rc-desc">${hex.description}</p>
-    `;
+    <p class="rc-label">Your hexagram</p>
+    <p class="rc-number">No. ${hex.number}</p>
+    <h1 class="rc-name">
+      <span class="rc-kanji">${hex.name}</span>
+      <span class="rc-yomi">${hex.reading}</span>
+    </h1>
+    <p class="rc-summary">${hex.summary}</p>
+    <div class="rc-rule"></div>
+    <p class="rc-desc">${hex.description}</p>
+  `;
   }
 
   // ── Click handler ──────────────────────────────────────────
@@ -122,25 +129,31 @@
     if (state.busy || state.clicks >= 6) return;
     state.busy = true;
 
-    // freeze lottie at current frame
     if (state.anim) state.anim.goToAndStop(state.anim.currentFrame, true);
 
     pulse(() => {
       const bit = Math.random() < 0.5 ? '0' : '1';
       state.bits += bit;
       state.clicks++;
-      drawYao(bit, state.clicks);
 
       if (state.clicks < 6) {
-        setGuide(GUIDES[state.clicks]);
-        if (state.anim) state.anim.play();
-        state.busy = false;
+        setGuide('');
+        setTimeout(() => {
+          drawYao(bit, state.clicks);
+          setTimeout(() => {
+            setGuide(GUIDES[state.clicks]);
+            if (state.anim) state.anim.play();
+            state.busy = false;
+          }, 900);
+        }, 600);
       } else {
-        // 6th line — brief pause, then transition
         setGuide('');
         const hex = findByBits(state.bits);
-        if (!hex) { console.error('no hexagram for', state.bits); busy = false; return; }
-        setTimeout(() => hideSpinner(() => { renderResult(hex); show('screen-result'); }), 650);
+        if (!hex) { console.error('no hexagram for', state.bits); state.busy = false; return; }
+        setTimeout(() => {
+          drawYao(bit, state.clicks);
+          setTimeout(() => hideSpinner(() => { renderResult(hex); show('screen-result'); }), 1800);
+        }, 600);
       }
     });
   }
@@ -149,7 +162,15 @@
   function reset() {
     state.clicks = 0;
     state.bits = '';
-    busy = false;
+    state.busy = false;
+
+    const stack = document.getElementById('yao-stack');
+    const spinner = document.getElementById('spinner-wrap');
+    if (stack && spinner) {
+      spinner.parentElement.insertBefore(stack, spinner);
+    }
+    stack.style.opacity = '1';
+
     clearYao();
     setGuide(GUIDES[0]);
     document.getElementById('spinner-wrap').classList.remove('gone');

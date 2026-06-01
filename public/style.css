@@ -11,12 +11,11 @@
 :root {
   --bg: #0d0a13;
   --surface: #1a1428;
-  --accent: #9b6dff;
-  --muted: #5c3fa0;
-  --text: #ede8f5;
-  --dim: #7a6e8f;
-  --yin: #6ab0ff;
-  --yang: #ff8c75;
+  --accent: #a87fff;
+  --muted: #6a4fbf;
+  --text: #f0ecfa;
+  --dim: #9890aa;
+  --yao: #7a6a9a;
   --spin-sz: clamp(180px, 48vw, 260px);
 }
 
@@ -25,8 +24,10 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", Georgia, serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.01em;
 }
 
 /* ── Screens ─────────────────────────────────────── */
@@ -58,12 +59,18 @@ body {
 
 /* ── Guide ──────────────────────────────────────── */
 .guide {
-  font-size: clamp(0.76rem, 2.2vw, 0.9rem);
-  letter-spacing: 0.22em;
+  font-size: clamp(0.78rem, 2.2vw, 0.92rem);
+  letter-spacing: 0.28em;
   color: var(--dim);
   margin-bottom: 1.8rem;
   min-height: 1.4em;
   text-align: center;
+  transition: opacity 0.4s ease;
+  text-transform: uppercase;
+}
+
+.guide.hidden {
+  opacity: 0;
 }
 
 /* ── Spinner ─────────────────────────────────────── */
@@ -74,6 +81,7 @@ body {
   border-radius: 50%;
   transition: transform 0.5s ease, opacity 0.5s ease;
   will-change: transform, opacity;
+  filter: saturate(0.45) brightness(0.72);
 }
 
 #spinner-wrap.gone {
@@ -91,59 +99,61 @@ body {
 @keyframes tap-pulse {
   0% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0px rgba(155, 109, 255, 0));
   }
 
-  30% {
-    transform: scale(1.09);
-    filter: drop-shadow(0 0 18px rgba(155, 109, 255, .6));
+  25% {
+    transform: scale(0.92);
+  }
+
+  65% {
+    transform: scale(1.05);
   }
 
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0px rgba(155, 109, 255, 0));
   }
 }
 
 #spinner-wrap.pulse {
-  animation: tap-pulse 0.4s ease;
+  animation: tap-pulse 0.7s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 /* ── Yao stack ───────────────────────────────────── */
 #yao-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 1.8rem;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2.4rem;
+  min-height: 84px;
+  transition: opacity 0.4s ease;
 }
 
 .yao {
-  width: 76px;
-  height: 10px;
+  width: 80px;
+  height: 7px;
   position: relative;
 }
 
-/* Yang: solid bar */
 .yao.yang::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--yang);
-  border-radius: 3px;
-  animation: yao-appear 0.25s ease both;
+  background: var(--yao);
+  border-radius: 0;
+  animation: yao-appear 0.5s ease both;
 }
 
-/* Yin: two bars with gap */
 .yao.yin::before,
 .yao.yin::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 31px;
-  background: var(--yin);
-  border-radius: 3px;
-  animation: yao-appear 0.25s ease both;
+  width: 33px;
+  background: var(--yao);
+  border-radius: 0;
+  animation: yao-appear 0.5s ease both;
 }
 
 .yao.yin::before {
@@ -155,14 +165,18 @@ body {
 }
 
 @keyframes yao-appear {
-  from {
+  0% {
     opacity: 0;
-    transform: scaleX(0.4);
+    transform: scaleX(0);
   }
 
-  to {
+  20% {
     opacity: 1;
-    transform: scaleX(1);
+  }
+
+  100% {
+    opacity: 1;
+    tranform: scaleX(1);
   }
 }
 
@@ -174,6 +188,20 @@ body {
   text-align: center;
   max-width: 400px;
   width: 100%;
+}
+
+#result-card .yao-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2.4rem;
+}
+
+#result-card .yao-display .yao {
+  width: 120px;
+  height: 10px;
+  position: relative;
 }
 
 .rc-label {
@@ -191,11 +219,7 @@ body {
 }
 
 .rc-symbol {
-  font-size: clamp(3.8rem, 14vw, 5.8rem);
-  line-height: 1;
-  color: var(--accent);
-  margin-bottom: 0.7rem;
-  opacity: 0.88;
+  display: none;
 }
 
 .rc-name {
@@ -250,9 +274,10 @@ body {
   border: 1px solid var(--muted);
   color: var(--dim);
   padding: 0.55rem 2.2rem;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.82rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
   font-family: inherit;
   transition: border-color 0.2s, color 0.2s;
