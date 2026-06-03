@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,31 +8,37 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.4/lottie.min.js"></script>
 </head>
+
 <body>
-
-  <!-- Screen 1: Spinner -->
-<div id="screen-spin" class="screen active">
-  <p id="guide" class="guide">Tap to cast the oracle</p>
-  <div id="yao-stack">
-    <div class="yao" data-line="6"></div>
-    <div class="yao" data-line="5"></div>
-    <div class="yao" data-line="4"></div>
-    <div class="yao" data-line="3"></div>
-    <div class="yao" data-line="2"></div>
-    <div class="yao" data-line="1"></div>
+  <div id="screen-spin" class="screen active">
+    <div id="yao-stack-spin">
+      <div class="yao" data-line="6"></div>
+      <div class="yao" data-line="5"></div>
+      <div class="yao" data-line="4"></div>
+      <div class="yao" data-line="3"></div>
+      <div class="yao" data-line="2"></div>
+      <div class="yao" data-line="1"></div>
+    </div>
+    <p id="guide" class="guide">Tap to cast the oracle...</p>
+    <div id="spinner-wrap">
+      <div id="lottie-el"></div>
+    </div>
   </div>
-  <div id="spinner-wrap" role="button" aria-label="Tap to cast a line">
-    <div id="lottie-el"></div>
-  </div>
-  
-</div>
 
-  <!-- Screen 2: Result -->
   <div id="screen-result" class="screen">
+    <div id="yao-stack">
+      <div class="yao" data-line="6"></div>
+      <div class="yao" data-line="5"></div>
+      <div class="yao" data-line="4"></div>
+      <div class="yao" data-line="3"></div>
+      <div class="yao" data-line="2"></div>
+      <div class="yao" data-line="1"></div>
+    </div>
     <div id="result-card"></div>
     <button id="btn-again">Cast again</button>
   </div>
 
   <script src="app.js"></script>
 </body>
+
 </html>

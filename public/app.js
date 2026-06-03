@@ -1,28 +1,25 @@
 // app.js — v2 minimum I Ching reading flow
 // Self-contained IIFE. No globals. No build step.
-
 (() => {
   'use strict';
 
-  // ── State ──────────────────────────────────────────────────
   const state = {
     hexagrams: [],
     clicks: 0,
-    bits: '',      // '0'/'1' × 6
-    anim: null,    // Lottie instance
-    busy: false,   // guard against double-tap
+    bits: '',
+    anim: null,
+    busy: false,
   };
+
   const GUIDES = [
     'Tap to cast the oracle...',
     'Tap again..',
     'Tap again..',
     'Tap again..',
     'Tap again..',
-    'Tap again..',
-    'Last tap to reveal your hexagram',
+    'Last tap to reveal your hexagram...',
   ];
 
-  // ── Data ───────────────────────────────────────────────────
   async function loadHexagrams() {
     const res = await fetch('./hexagram.json');
     if (!res.ok) throw new Error(`hexagram.json: ${res.status}`);
@@ -33,7 +30,6 @@
     return state.hexagrams.find(h => h.array === str) ?? null;
   }
 
-  // ── Lottie spinner ─────────────────────────────────────────
   function initSpinner() {
     const el = document.getElementById('lottie-el');
     el.innerHTML = '';
@@ -51,80 +47,114 @@
     if (state.anim) { state.anim.destroy(); state.anim = null; }
   }
 
-  // visual pulse → cb when done
   function pulse(cb) {
     const w = document.getElementById('spinner-wrap');
     w.classList.remove('pulse');
-    void w.offsetWidth;                       // reflow to restart animation
+    void w.offsetWidth;
     w.classList.add('pulse');
     w.addEventListener('animationend', () => { w.classList.remove('pulse'); cb(); }, { once: true });
   }
 
-  // scale to zero → cb when done
   function hideSpinner(cb) {
-    const w = document.getElementById('spinner-wrap');
-    w.classList.add('gone');
-    setTimeout(cb, 520);
-  }
+    const screen = document.getElementById('screen-spin');
 
-  // ── Yao (爻) rendering ─────────────────────────────────────
-  // Uses CSS-only bars — no image files needed.
-  function drawYao(bit, lineNo) {
-    // Replace the slot node to re-trigger the CSS animation
-    const old = document.querySelector(`#yao-stack .yao[data-line="${lineNo}"]`);
-    if (!old) return;
-    const fresh = document.createElement('div');
-    fresh.className = `yao ${bit === '1' ? 'yang' : 'yin'}`;
-    fresh.dataset.line = lineNo;
-    old.replaceWith(fresh);
-  }
+    screen.style.display = 'flex';
+    screen.style.opacity = '1';
+    screen.style.transform = 'scale(1)';
+    screen.style.filter = 'blur(0px)';
+    screen.style.transformOrigin = 'center center';
 
-  function clearYao() {
-    document.querySelectorAll('#yao-stack .yao').forEach(el => {
-      const n = el.dataset.line;
-      const blank = document.createElement('div');
-      blank.className = 'yao';
-      blank.dataset.line = n;
-      el.replaceWith(blank);
+    requestAnimationFrame(() => {
+      screen.style.transition =
+        'opacity 1s ease, transform 1s ease, filter 1s ease';
+
+      screen.style.opacity = '0';
+      screen.style.transform = 'scale(0.5)';
+      screen.style.filter = 'blur(4px)';
+
+      setTimeout(() => {
+        destroySpinner();
+        screen.classList.remove('active');
+        screen.style.display = 'none';
+        cb();
+      }, 800);
+    });
+  }
+  function showResultWithReveal() {
+    const result = document.getElementById('screen-result');
+
+    result.style.transition = 'none';
+    result.style.opacity = '0';
+    result.style.filter = 'blur(12px)';
+    result.style.transform = 'scale(0.94)';
+
+    show('screen-result');
+
+    result.offsetHeight;
+
+    requestAnimationFrame(() => {
+      result.style.transition =
+        'opacity 1.8s ease, filter 1.8s ease, transform 1.8s ease';
+      result.style.opacity = '1';
+      result.style.filter = 'blur(0px)';
+      result.style.transform = 'scale(1)';
     });
   }
 
-  // ── Guide text ─────────────────────────────────────────────
-  function setGuide(text) {
-    const el = document.getElementById('guide');
-    if (el) el.textContent = text;
+  function drawYao(bit, lineNo) {
+    ['#yao-stack-spin', '#yao-stack'].forEach(id => {
+      const old = document.querySelector(`${id} .yao[data-line="${lineNo}"]`);
+      if (!old) return;
+      const fresh = document.createElement('div');
+      fresh.className = `yao ${bit === '1' ? 'yang' : 'yin'}`;
+      fresh.dataset.line = lineNo;
+      old.replaceWith(fresh);
+    });
   }
 
-  // ── Screen transition ──────────────────────────────────────
+  function clearYao() {
+    ['#yao-stack-spin', '#yao-stack'].forEach(id => {
+      document.querySelectorAll(`${id} .yao`).forEach(el => {
+        const n = el.dataset.line;
+        const blank = document.createElement('div');
+        blank.className = 'yao';
+        blank.dataset.line = n;
+        el.replaceWith(blank);
+      });
+    });
+  }
+
+  function setGuide(text) {
+    const el = document.getElementById('guide');
+    if (!el) return;
+    el.textContent = text;
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  }
+
   function show(id) {
-    if (id === 'screen-result') {
-      const stack = document.getElementById('yao-stack');
-      const resultCard = document.getElementById('result-card');
-      if (stack && resultCard) {
-        resultCard.parentElement.insertBefore(stack, resultCard);
-      }
-    }
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.toggle('active', s.id === id);
     });
   }
 
-  // ── Result ─────────────────────────────────────────────────
   function renderResult(hex) {
     document.getElementById('result-card').innerHTML = `
-    <p class="rc-label">Your hexagram</p>
-    <p class="rc-number">No. ${hex.number}</p>
-    <h1 class="rc-name">
-      <span class="rc-kanji">${hex.name}</span>
-      <span class="rc-yomi">${hex.reading}</span>
-    </h1>
-    <p class="rc-summary">${hex.summary}</p>
-    <div class="rc-rule"></div>
-    <p class="rc-desc">${hex.description}</p>
-  `;
+      <p class="rc-label">Your hexagram</p>
+      <p class="rc-number">No. ${hex.number}</p>
+      <h1 class="rc-name">
+        <span class="rc-kanji">${hex.name}</span>
+        <span class="rc-yomi">${hex.reading}</span>
+      </h1>
+      <p class="rc-summary">${hex.summary}</p>
+      <div class="rc-rule"></div>
+      <p class="rc-desc">${hex.description}</p>
+    `;
   }
 
-  // ── Click handler ──────────────────────────────────────────
+
+
   function onTap() {
     if (state.busy || state.clicks >= 6) return;
     state.busy = true;
@@ -141,45 +171,62 @@
         setTimeout(() => {
           drawYao(bit, state.clicks);
           setTimeout(() => {
-            setGuide(GUIDES[state.clicks]);
+            if (state.clicks === 5) {
+              setGuide('Last tap to reveal your hexagram...');
+            } else {
+              setGuide('Tap again..');
+            }
             if (state.anim) state.anim.play();
             state.busy = false;
-          }, 900);
-        }, 600);
+          }, 600);
+        }, 0);
       } else {
         setGuide('');
         const hex = findByBits(state.bits);
-        if (!hex) { console.error('no hexagram for', state.bits); state.busy = false; return; }
+        if (!hex) {
+          console.error('no hexagram for', state.bits);
+          state.busy = false;
+          return;
+        }
+
         setTimeout(() => {
           drawYao(bit, state.clicks);
-          setTimeout(() => hideSpinner(() => { renderResult(hex); show('screen-result'); }), 1800);
+        }, 0);
+
+        setTimeout(() => {
+          hideSpinner(() => {
+            renderResult(hex);
+
+            setTimeout(() => {
+              console.log('showResultWithReveal fired');
+              showResultWithReveal();
+            }, 0);
+          });
         }, 600);
       }
-    });
-  }
+    }); // ← pulse() 閉じ
+  } // ← onTap() 閉じ
 
-  // ── Reset ──────────────────────────────────────────────────
   function reset() {
     state.clicks = 0;
     state.bits = '';
     state.busy = false;
 
-    const stack = document.getElementById('yao-stack');
-    const spinner = document.getElementById('spinner-wrap');
-    if (stack && spinner) {
-      spinner.parentElement.insertBefore(stack, spinner);
-    }
-    stack.style.opacity = '1';
+    const screen = document.getElementById('screen-spin');
+    screen.style.display = '';
+    screen.style.opacity = '';
+    screen.style.transition = '';
+    screen.style.opacity = '1';
+    screen.style.transform = 'scale(1)';
+    screen.style.filter = 'blur(0px)';
 
     clearYao();
     setGuide(GUIDES[0]);
-    document.getElementById('spinner-wrap').classList.remove('gone');
     destroySpinner();
     initSpinner();
     show('screen-spin');
   }
 
-  // ── Bootstrap ──────────────────────────────────────────────
   async function init() {
     try {
       await loadHexagrams();
