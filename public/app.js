@@ -9,6 +9,8 @@
     bits: '',
     anim: null,
     busy: false,
+    changingLine: null, // 1–6
+    hex: null
   };
 
   const GUIDES = [
@@ -17,7 +19,8 @@
     'Tap again..',
     'Tap again..',
     'Tap again..',
-    'Last tap to reveal your hexagram...',
+    'One last tap to reveal the pattern',
+    'One final tap to reveal what moves'
   ];
 
   async function loadHexagrams() {
@@ -58,6 +61,8 @@
   function hideSpinner(cb) {
     const screen = document.getElementById('screen-spin');
 
+    destroySpinner(); // ← インラインのif(state.anim)ブロックをこれに置き換え
+
     screen.style.display = 'flex';
     screen.style.opacity = '1';
     screen.style.transform = 'scale(1)';
@@ -94,7 +99,7 @@
 
     requestAnimationFrame(() => {
       result.style.transition =
-        'opacity 1.8s ease, filter 1.8s ease, transform 1.8s ease';
+        'opacity 1.4s ease, filter 1.4s ease, transform 1.4s ease';
       result.style.opacity = '1';
       result.style.filter = 'blur(0px)';
       result.style.transform = 'scale(1)';
@@ -133,6 +138,17 @@
     el.style.animation = '';
   }
 
+  //変爻の表示
+  function markChangingLine(lineNo) {
+    ['#yao-stack-spin', '#yao-stack'].forEach(id => {
+      const yao = document.querySelector(`${id} .yao[data-line="${lineNo}"]`);
+      if (!yao) return;
+      const dot = document.createElement('span');
+      dot.className = 'changing-dot';
+      yao.appendChild(dot);
+    });
+  }
+
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.toggle('active', s.id === id);
@@ -140,24 +156,55 @@
   }
 
   function renderResult(hex) {
+    const changingText = hex.yao_descriptions[state.changingLine.toString()];
     document.getElementById('result-card').innerHTML = `
-      <p class="rc-label">Your hexagram</p>
-      <p class="rc-number">No. ${hex.number}</p>
-      <h1 class="rc-name">
-        <span class="rc-kanji">${hex.name}</span>
-        <span class="rc-yomi">${hex.reading}</span>
-      </h1>
-      <p class="rc-summary">${hex.summary}</p>
-      <div class="rc-rule"></div>
-      <p class="rc-desc">${hex.description}</p>
-    `;
+    <p class="rc-label">Your hexagram</p>
+    <p class="rc-number">No. ${hex.number}</p>
+    <h1 class="rc-name">
+      <span class="rc-kanji">${hex.name}</span>
+      <span class="rc-yomi">${hex.reading}</span>
+    </h1>
+    <p class="rc-summary">${hex.summary}</p>
+    <div class="rc-rule"></div>
+    <p class="rc-desc">${hex.description}</p>
+    <div class="rc-rule"></div>
+    <p class="rc-changing-label">Changing line ${state.changingLine}</p>
+    <p class="rc-changing-text">${changingText}</p>
+  `;
   }
 
 
-
   function onTap() {
-    if (state.busy || state.clicks >= 6) return;
+    if (state.busy || state.clicks >= 7) return;
     state.busy = true;
+
+    // 7回目のタップ：変爻を決定して結果へ
+    if (state.clicks === 6) {
+      const lineNo = Math.floor(Math.random() * 6) + 1;
+
+      setGuide('');
+      state.busy = true;
+
+      if (state.anim) state.anim.goToAndStop(state.anim.currentFrame, true);
+
+      pulse(() => {
+        console.log('pulse finished');
+        setTimeout(() => {
+          console.log('marking line now');
+          state.changingLine = lineNo;
+          markChangingLine(lineNo);
+
+          setTimeout(() => {
+            hideSpinner(() => {
+              renderResult(state.hex);
+              showResultWithReveal();
+            });
+          }, 1500);
+        }, 600);
+      });
+
+      return;
+    }
 
     if (state.anim) state.anim.goToAndStop(state.anim.currentFrame, true);
 
@@ -172,15 +219,16 @@
           drawYao(bit, state.clicks);
           setTimeout(() => {
             if (state.clicks === 5) {
-              setGuide('Last tap to reveal your hexagram...');
+              setGuide('One last tap to reveal the pattern');
             } else {
-              setGuide('Tap again..');
+              setGuide(GUIDES[state.clicks]);
             }
             if (state.anim) state.anim.play();
             state.busy = false;
           }, 600);
         }, 0);
       } else {
+        // 6回目のタップ：爻を描画してhexを保存、変爻ガイドを表示
         setGuide('');
         const hex = findByBits(state.bits);
         if (!hex) {
@@ -188,24 +236,19 @@
           state.busy = false;
           return;
         }
+        state.hex = hex;
 
         setTimeout(() => {
           drawYao(bit, state.clicks);
+          setTimeout(() => {
+            setGuide('Tap once more to reveal the changing line.');
+            if (state.anim) state.anim.play();
+            state.busy = false;
+          }, 600);
         }, 0);
-
-        setTimeout(() => {
-          hideSpinner(() => {
-            renderResult(hex);
-
-            setTimeout(() => {
-              console.log('showResultWithReveal fired');
-              showResultWithReveal();
-            }, 0);
-          });
-        }, 600);
       }
-    }); // ← pulse() 閉じ
-  } // ← onTap() 閉じ
+    });
+  }
 
   function reset() {
     state.clicks = 0;
@@ -213,12 +256,14 @@
     state.busy = false;
 
     const screen = document.getElementById('screen-spin');
+    document.getElementById('screen-result').style.cssText = '';
     screen.style.display = '';
-    screen.style.opacity = '';
     screen.style.transition = '';
     screen.style.opacity = '1';
     screen.style.transform = 'scale(1)';
     screen.style.filter = 'blur(0px)';
+    state.hex = null;
+    state.changingLine = null;
 
     clearYao();
     setGuide(GUIDES[0]);
