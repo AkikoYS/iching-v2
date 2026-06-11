@@ -19,18 +19,26 @@
     'Tap again..',
     'Tap again..',
     'Tap again..',
-    'One last tap to reveal the pattern',
-    'One final tap to reveal what moves'
+    'One last tap to reveal the pattern...',
+    'One final tap to reveal what moves...'
   ];
 
   async function loadHexagrams() {
-    const res = await fetch('./hexagram.json');
-    if (!res.ok) throw new Error(`hexagram.json: ${res.status}`);
+    const res = await fetch('./hexagram_en.json');
+    if (!res.ok) throw new Error(`hexagram_en.json: ${res.status}`);
     state.hexagrams = await res.json();
   }
 
+  // function findByBits(str) {
+  //   return state.hexagrams.find(h => h.array === str) ?? null;
+  // }
+
   function findByBits(str) {
-    return state.hexagrams.find(h => h.array === str) ?? null;
+    const hex = state.hexagrams.find(h => h.array === str);
+    if (hex) return hex;
+
+    console.warn('not translated yet:', str);
+    return state.hexagrams[Math.floor(Math.random() * state.hexagrams.length)];
   }
 
   function initSpinner() {
@@ -156,23 +164,36 @@
   }
 
   function renderResult(hex) {
-    const changingText = hex.yao_descriptions[state.changingLine.toString()];
+    const lineNo = state.changingLine;
+    const lineText = hex.lines_en?.[String(lineNo)] || '';
+
     document.getElementById('result-card').innerHTML = `
-    <p class="rc-label">Your hexagram</p>
     <p class="rc-number">No. ${hex.number}</p>
-    <h1 class="rc-name">
-      <span class="rc-kanji">${hex.name}</span>
-      <span class="rc-yomi">${hex.reading}</span>
-    </h1>
-    <p class="rc-summary">${hex.summary}</p>
+
+    <p class="rc-kanji-name">${hex.name || ''}</p>
+
+    <h1 class="rc-name">${hex.title_en || ''}</h1>
+
+    <p class="rc-summary">${hex.summary_en || ''}</p>
+
     <div class="rc-rule"></div>
-    <p class="rc-desc">${hex.description}</p>
-    <div class="rc-rule"></div>
-    <p class="rc-changing-label">Changing line ${state.changingLine}</p>
-    <p class="rc-changing-text">${changingText}</p>
+
+    <section class="rc-section">
+      <p class="rc-section-label">Judgment</p>
+      <p class="rc-text">${hex.judgment_en || ''}</p>
+    </section>
+
+    <section class="rc-section">
+      <p class="rc-section-label">Symbolism</p>
+      <p class="rc-text">${hex.symbolism_en || ''}</p>
+    </section>
+
+    <section class="rc-section rc-changing">
+      <p class="rc-summary">What is moving —— Line ${lineNo}</p>
+      <p class="rc-text">${lineText}</p>
+    </section>
   `;
   }
-
 
   function onTap() {
     if (state.busy || state.clicks >= 7) return;
@@ -219,7 +240,7 @@
           drawYao(bit, state.clicks);
           setTimeout(() => {
             if (state.clicks === 5) {
-              setGuide('One last tap to reveal the pattern');
+              setGuide('One last tap to reveal the pattern...');
             } else {
               setGuide(GUIDES[state.clicks]);
             }
@@ -241,7 +262,7 @@
         setTimeout(() => {
           drawYao(bit, state.clicks);
           setTimeout(() => {
-            setGuide('Tap once more to reveal the changing line.');
+            setGuide('Tap once more to reveal what is moving...');
             if (state.anim) state.anim.play();
             state.busy = false;
           }, 600);
